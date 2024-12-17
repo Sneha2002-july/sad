@@ -1,0 +1,33 @@
+private void addSectionField(JPanel panel, String label1, JComponent field1, String label2, JComponent field2, GridBagConstraints gbc, int row) {
+    // Reduce horizontal and vertical spacing by minimizing insets
+    gbc.insets = new Insets(2, 2, 2, 2); // Very small margins
+    gbc.ipadx = 0; // No extra padding in x-direction
+    gbc.ipady = 0; // No extra padding in y-direction
+
+    // Label 1
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    gbc.weightx = 0.2; // Set weight for alignment
+    gbc.anchor = GridBagConstraints.LINE_END; // Align label to the right
+    panel.add(new JLabel(label1), gbc);
+
+    // Field 1
+    gbc.gridx = 1;
+    gbc.weightx = 0.8; // Let the text field take more space
+    gbc.anchor = GridBagConstraints.LINE_START; // Align field to the left
+    panel.add(field1, gbc);
+
+    if (label2 != null && field2 != null) {
+        // Label 2
+        gbc.gridx = 2;
+        gbc.weightx = 0.2;
+        gbc.anchor = GridBagConstraints.LINE_END;
+        panel.add(new JLabel(label2), gbc);
+
+        // Field 2
+        gbc.gridx = 3;
+        gbc.weightx = 0.8;
+        gbc.anchor = GridBagConstraints.LINE_START;
+        panel.add(field2, gbc);
+    }
+}
