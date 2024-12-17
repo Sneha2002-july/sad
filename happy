@@ -69,3 +69,12 @@ private void addSectionField(JPanel panel, String label1, JComponent field1, Str
     }
 }
 
+
+private void setSmallFieldSize(JTextField... fields) {
+    for (JTextField field : fields) {
+        field.setPreferredSize(new java.awt.Dimension(100, 22)); // Small size
+    }
+}
+setSmallFieldSize(nameField, lnameField, contactField, emailField, addressField, 
+                  adressField2, addressField3, pinField, ageField, consultationFeeField);
+
