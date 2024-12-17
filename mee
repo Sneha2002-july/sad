@@ -1,0 +1,211 @@
+public class DoctorEditorPanel extends JPanel {
+	protected JTextField nameField, contactField, emailField, addressField, ageField, qualificationField;
+    protected JComboBox<String> departmentDropdown, specializationDropdown;
+    protected JSpinner startTimeSpinner, endTimeSpinner, availableFromDaySpinner, availableToDaySpinner;
+    protected JDateChooser dobPicker;
+    protected JCheckBox[] dayCheckBoxes;
+    protected JTextField consultationFeeField;
+    private Doctor doctor; // Doctor being edited
+    private JButton updateButton;
+    protected final Map<String,List<String>>departmentSpecialisationMap=new HashMap<>();
+
+    public DoctorEditorPanel(CardLayout cardLayout, JPanel container, DoctorTableModel tableModel,Doctor doctor) {
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createTitledBorder("Doctor Profile"));
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        initializeDepartmentSpecializationMap();      
+ 
+        // Input fields
+        nameField = new JTextField(20);
+        contactField = new JTextField(20);
+        emailField = new JTextField(20);
+        addressField = new JTextField(20);
+        ageField = new JTextField(20);
+        ageField.setEditable(false);
+        qualificationField = new JTextField(20);
+
+        departmentDropdown = new JComboBox<>(departmentSpecialisationMap.keySet().toArray(new String[0]));
+        specializationDropdown = new JComboBox<>();
+        
+        updateSpecializations();
+        
+        departmentDropdown.addActionListener(e->updateSpecializations());
+        
+        startTimeSpinner = new JSpinner(new SpinnerDateModel());
+        endTimeSpinner = new JSpinner(new SpinnerDateModel());
+		
+        // Format spinners
+        startTimeSpinner.setEditor(new JSpinner.DateEditor(startTimeSpinner, "HH:mm"));
+        endTimeSpinner.setEditor(new JSpinner.DateEditor(endTimeSpinner, "HH:mm"));
+
+        
+        dobPicker = new JDateChooser();
+        //consultation fee
+        consultationFeeField=new JTextField(20);
+        
+        String[] days= {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        dayCheckBoxes=new JCheckBox[days.length];
+        JPanel daysPanel=new JPanel(new FlowLayout(FlowLayout.LEFT,5,5));
+        for(int i=0;i<days.length;i++) {
+        	dayCheckBoxes[i]=new JCheckBox(days[i]);
+        	daysPanel.add(dayCheckBoxes[i]);
+        dobPicker.getDateEditor().addPropertyChangeListener("date", evt ->{
+        	Date selectedDate= dobPicker.getDate();
+        	if(selectedDate!=null) {
+        		LocalDate dob=selectedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        		int age=calculateAge(dob);
+        		ageField.setText(String.valueOf(age));
+        		}
+        	else {
+        		ageField.setText("");
+        	}
+        });
+        }
+        // Add fields to the form
+        addField(formPanel, gbc, "Name:", nameField, 0);
+        addField(formPanel, gbc, "Contact:", contactField, 1);
+        addField(formPanel, gbc, "Email:", emailField, 2);
+        addField(formPanel, gbc, "Address:", addressField, 3);
+        addField(formPanel, gbc, "Age:", ageField, 4);
+        addField(formPanel, gbc, "Date of Birth:", dobPicker, 5);
+        addField(formPanel, gbc, "Qualification:", qualificationField, 6);
+        addField(formPanel, gbc, "Department:", departmentDropdown, 7);
+        addField(formPanel, gbc, "Specialization:", specializationDropdown, 8);
+        addField(formPanel, gbc, "Start Time:", startTimeSpinner, 9);
+        addField(formPanel, gbc, "End Time:", endTimeSpinner, 10);
+        
+        addField(formPanel, gbc, "Available Days:", daysPanel, 11);
+       
+        addField(formPanel, gbc, "Consultation Fee", consultationFeeField, 12);
+
+        gbc.gridx = 0;
+        gbc.gridy = 13;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        // Buttons for Save and Clear
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        updateButton = new JButton("Update");
+        JButton clearButton = new JButton("Clear");
+        clearButton.addActionListener(e -> clearFields());
+        buttonPanel.add(updateButton);
+        buttonPanel.add(clearButton);
+
+        formPanel.add(buttonPanel, gbc);
+
+        add(formPanel, BorderLayout.CENTER);
+
+        JButton goToBrowserButton = new JButton("Go to Browser Page");
+        goToBrowserButton.addActionListener(e -> cardLayout.show(container, "Browser"));
+        add(goToBrowserButton, BorderLayout.SOUTH);
+        
+        this.doctor = doctor;
+        populateFields(doctor);
+        updateButton.addActionListener(e -> {
+        	updateDoctorProfile(tableModel);
+        	cardLayout.show(container, "Browser");
+        	});
+    }
+    public void initializeDepartmentSpecializationMap() {
+    	departmentSpecialisationMap.put("Cardiology",Arrays.asList("Pediatric Cardiology","Electrophysiology"));
+    	departmentSpecialisationMap.put("Dermatology",Arrays.asList("Cosmetic Dermatology","Pediatric Dermatology"));
+    	departmentSpecialisationMap.put("Neurology",Arrays.asList("Neuroimunology","Epileptologist","Pediatric Neurology"));
+    	departmentSpecialisationMap.put("Pediatrics",Arrays.asList("Pediatric Cardiology","Pediatric Neurology","Pediatric Opthamology"));
+    	departmentSpecialisationMap.put("Opthamology",Arrays.asList("Pediatric Opthamologist","Retina specialist"));
+    }
+    private void updateSpecializations() {
+    	String selectedDepartment=(String)departmentDropdown.getSelectedItem();
+    	List <String> specializations=departmentSpecialisationMap.getOrDefault(selectedDepartment, Collections.emptyList());
+    	specializationDropdown.removeAllItems();
+    	for(String specialization:specializations) {
+    		specializationDropdown.addItem(specialization);
+    	}
+    	
+    }
+    private void addField(JPanel panel, GridBagConstraints gbc, String label, JComponent field, int row) {
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0.2;
+        panel.add(new JLabel(label), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.8;
+        panel.add(field, gbc);
+    }
+
+    private void clearFields() {
+        nameField.setText("");
+        contactField.setText("");
+        emailField.setText("");
+        addressField.setText("");
+        ageField.setText("");
+        qualificationField.setText("");
+        departmentDropdown.setSelectedIndex(0);
+        specializationDropdown.setSelectedIndex(0);
+        startTimeSpinner.setValue(new SpinnerDateModel().getDate());
+        endTimeSpinner.setValue(new SpinnerDateModel().getDate());        
+        consultationFeeField.setText("");
+        for(JCheckBox checkBox:dayCheckBoxes) {
+        	checkBox.setSelected(false);
+        }
+    }
+    private int calculateAge(LocalDate dob) {
+    	LocalDate currentDate=LocalDate.now();
+    	if(dob!=null&& dob.isBefore(currentDate)) {
+    		return Period.between(dob,currentDate).getYears();
+    	}
+    	return 0;
+    }
+	
+	
+    
+    private void populateFields(Doctor doctor) {
+        nameField.setText(doctor.getName());
+        contactField.setText(doctor.getContact());
+        emailField.setText(doctor.getEmail());
+        addressField.setText(doctor.getAddress());
+        qualificationField.setText(doctor.getQualification());
+        departmentDropdown.setSelectedItem(doctor.getDepartment());
+        specializationDropdown.setSelectedItem(doctor.getSpecialization());
+        dobPicker.setDate(Date.from(doctor.getDob().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        consultationFeeField.setText(String.valueOf(doctor.getConsultationFee()));
+        // Populate available days
+        for (JCheckBox checkBox : dayCheckBoxes) {
+            checkBox.setSelected(doctor.getAvailableDays().contains(checkBox.getText()));
+        }
+        try {
+			startTimeSpinner.setValue(new SimpleDateFormat("HH:mm").parse(doctor.getStartTime()));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        try {
+			endTimeSpinner.setValue(new SimpleDateFormat("HH:mm").parse(doctor.getEndTime()));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    protected void updateDoctorProfile(DoctorTableModel tableModel) {
+        //saveDoctorProfile(tableModel);
+        // Update the existing doctor in the list
+        doctor.setName(nameField.getText());
+        doctor.setContact(contactField.getText());
+        doctor.setEmail(emailField.getText());
+        doctor.setAddress(addressField.getText());
+        doctor.setQualification(qualificationField.getText());
+        doctor.setDepartment((String) departmentDropdown.getSelectedItem());
+        doctor.setSpecialization((String) specializationDropdown.getSelectedItem());
+        doctor.setDob(dobPicker.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+        doctor.setConsultationFee(Double.parseDouble(consultationFeeField.getText()));
+        JOptionPane.showMessageDialog(this, "Doctor Profile Updated Successfully!");
+        tableModel.updateDoctor();
+        
+    }
+}
